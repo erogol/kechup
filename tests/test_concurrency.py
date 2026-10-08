@@ -10,6 +10,8 @@ import sys
 import time
 from pathlib import Path
 
+import pytest
+
 from conftest import KECHUP_SRC, git, run_kechup
 
 
@@ -127,6 +129,19 @@ def test_kill_between_write_and_commit_next_write_refuses(new_project: Path) -> 
 
     retry = run_kechup(["claim", t1], cwd=new_project, agent="a")
     assert retry.exit_code == 0, retry.stderr
+
+
+def test_bootstrap_lock_default_dir_is_per_user(
+    tmp_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Without KECHUP_LOCK_DIR, each user gets its own lock folder, so a
+    # folder made by root does not block another user.
+    monkeypatch.syspath_prepend(KECHUP_SRC)
+    monkeypatch.delenv("KECHUP_LOCK_DIR", raising=False)
+    from kechup.lock import bootstrap_lock_path
+
+    path = bootstrap_lock_path(tmp_dir)
+    assert path.parent.name == f"kechup-locks-{os.getuid()}"
 
 
 def test_bootstrap_lock_dir_env_override(tmp_dir: Path) -> None:
