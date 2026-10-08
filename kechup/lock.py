@@ -62,7 +62,9 @@ def bootstrap_lock_path(target: Path) -> Path:
     base = os.environ.get("KECHUP_LOCK_DIR")
     if base:
         return Path(base) / f"{digest}.lock"
-    return Path(tempfile.gettempdir()) / "kechup-locks" / f"{digest}.lock"
+    # One lock folder per user: a folder made by one user is not writable
+    # for another user.
+    return Path(tempfile.gettempdir()) / f"kechup-locks-{os.getuid()}" / f"{digest}.lock"
 
 
 @contextmanager
