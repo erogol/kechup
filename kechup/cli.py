@@ -131,7 +131,10 @@ def build_parser() -> argparse.ArgumentParser:
     p_approve.add_argument("kind")
     p_approve.add_argument("--by")
 
-    sub.add_parser("snapshot", parents=[json_parent])
+    p_snapshot = sub.add_parser("snapshot", parents=[json_parent])
+    # Accepted so one agent rule ("pass --by on every write") works; the
+    # snapshot author stays "snapshot" (owner decision 14).
+    p_snapshot.add_argument("--by")
 
     p_config = sub.add_parser("config", parents=[json_parent])
     config_sub = p_config.add_subparsers(dest="config_kind", required=True)

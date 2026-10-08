@@ -644,6 +644,19 @@ def test_snapshot_commits_only_eligible_files(new_project: Path) -> None:
     assert "id_rsa" in status
 
 
+def test_snapshot_accepts_by_and_keeps_snapshot_author(new_project: Path) -> None:
+    """An agent that passes --by on every write command can also pass it
+    to snapshot. The commit author stays "snapshot"."""
+    (new_project / "notes.txt").write_text("hi")
+    result = run_kechup(
+        ["snapshot", "--by", "agent:session:x"], cwd=new_project, agent=None
+    )
+    assert result.exit_code == 0, result.stderr
+    assert result.json["data"]["committed"] is True
+    author = git(new_project, "log", "-1", "--format=%an").stdout.strip()
+    assert author == "snapshot"
+
+
 def test_config_set_owner_only_current_owner(new_project: Path) -> None:
     result = run_kechup(["config", "set-owner", "new-owner"], cwd=new_project, agent="not-owner")
     assert result.exit_code == 2
