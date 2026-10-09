@@ -113,12 +113,48 @@ def test_agent_id_blank_after_strip_refuses(new_project: Path) -> None:
     assert author == "flag-agent"
 
 
-def test_note_wrong_owner_refusal(new_project: Path) -> None:
+def test_note_by_non_owner_records_author(new_project: Path) -> None:
     t1 = _add_task(new_project, "Do work")
     run_kechup(["claim", t1], cwd=new_project, agent="agent-a")
-    result = run_kechup(["note", t1, "hi"], cwd=new_project, agent="agent-b")
+    tasks_json = new_project / ".kechup" / "tasks.json"
+    claimed_before = json.loads(tasks_json.read_text())["tasks"][t1]["claimed_at"]
+    result = run_kechup(["note", t1, "hi from helper"], cwd=new_project, agent="agent-b")
+    assert result.exit_code == 0, result.stderr
+    task = json.loads(tasks_json.read_text())["tasks"][t1]
+    assert task["notes"][-1]["by"] == "agent-b"
+    assert task["notes"][-1]["text"] == "hi from helper"
+    assert task["owner"] == "agent-a"
+    assert task["claimed_at"] == claimed_before
+    assert task["last_note_at"] is not None
+    author = git(new_project, "show", "-s", "--format=%an", "HEAD").stdout.strip()
+    assert author == "agent-b"
+
+
+def test_note_show_prints_author(new_project: Path) -> None:
+    t1 = _add_task(new_project, "Do work")
+    run_kechup(["claim", t1], cwd=new_project, agent="agent-a")
+    run_kechup(["note", t1, "helper note"], cwd=new_project, agent="agent-b")
+    show = run_kechup(["show", t1], cwd=new_project, agent="agent-a", as_json=False)
+    assert show.exit_code == 0, show.stderr
+    assert "by=agent-b" in show.stdout
+    assert "text=helper note" in show.stdout
+
+
+def test_note_not_doing_refusal(new_project: Path) -> None:
+    t1 = _add_task(new_project, "Do work")
+    result = run_kechup(["note", t1, "hi"], cwd=new_project, agent="agent-a")
     assert result.exit_code == 2
-    assert result.json["error"]["code"] == "not_owner"
+    assert result.json["error"]["code"] == "not_doing"
+
+
+def test_note_without_agent_id_refusal(new_project: Path) -> None:
+    t1 = _add_task(new_project, "Do work")
+    run_kechup(["claim", t1], cwd=new_project, agent="agent-a")
+    result = run_kechup(["note", t1, "hi"], cwd=new_project, agent=None)
+    assert result.exit_code == 3
+    assert result.json["error"]["code"] == "no_agent_id"
+    task = json.loads((new_project / ".kechup" / "tasks.json").read_text())["tasks"][t1]
+    assert task["notes"] == []
 
 
 def test_unclaim_wrong_owner_refusal(new_project: Path) -> None:
