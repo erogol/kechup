@@ -145,7 +145,7 @@ kechup also computes a **displayed** state when you read the tasks. It never sto
 | `kechup list [--state todo\|doing\|blocked\|done\|dropped\|open]` | List the tasks. |
 | `kechup next [--claim]` | Show the next open task. `--claim` also claims it. |
 | `kechup claim T<n>` / `kechup unclaim T<n>` | Take or release a task. |
-| `kechup note T<n> "<text>"` | Add a progress note. |
+| `kechup note T<n> "<text>"` | Add a progress note to a `doing` task. Any agent can add a note. The note records its author. |
 | `kechup block T<n> --reason "<text>"` / `kechup unblock T<n>` | Block or unblock a task by hand. |
 | `kechup assign T<n> --to <id>` | Give a task to an agent. |
 | `kechup done T<n> --evidence <path>` | Accept the work. Owner only. The task must be `doing` and have a committed `REPORT.md`. |

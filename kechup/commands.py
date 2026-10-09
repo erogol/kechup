@@ -255,11 +255,14 @@ def note_task(project_root: Path, agent_id: str, task_id: str, text: str) -> dic
         begin_write(project_root)
         tasks_file = load_tasks(project_root)
         task = _task_or_raise(tasks_file, task_id)
-        if task.state != "doing" or task.owner != agent_id:
-            raise KechupError(2, "not_owner", f"not the owner of {task_id}")
+        if task.state != "doing":
+            raise KechupError(2, "not_doing", f"{task_id} is not doing")
+        # Any agent can add a note; `by` records the author. Only the owner's
+        # note renews the claim, so a helper cannot keep a dead claim alive.
         task.notes.append({"at": now_iso(), "by": agent_id, "text": text})
         task.last_note_at = now_iso()
-        task.claimed_at = now_iso()
+        if task.owner == agent_id:
+            task.claimed_at = now_iso()
         save_tasks(project_root, tasks_file)
         paths = [".kechup/tasks.json"]
         gitutil.git_add(project_root, paths)
