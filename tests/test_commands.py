@@ -220,15 +220,41 @@ def _complete_task(project: Path, task_id: str, title_slug: str | None = None) -
     assert done.exit_code == 0, done.stderr
 
 
-def test_done_non_owner_refusal(new_project: Path) -> None:
+def test_done_by_any_agent_succeeds(new_project: Path) -> None:
+    """Any agent can run `done`. The project owner is not required."""
     t1 = _add_task(new_project, "Do work")
     show = run_kechup(["show", t1], cwd=new_project, agent="a")
     folder = show.json["data"]["folder"]
     (new_project / folder / "REPORT.md").write_text("done work\n")
     run_kechup(["commit", f"{folder}/REPORT.md", "-m", "r", "--task", t1], cwd=new_project, agent="a")
     result = run_kechup(["done", t1, "--evidence", "ev"], cwd=new_project, agent="not-owner")
+    assert result.exit_code == 0, result.stderr
+    show2 = run_kechup(["show", t1], cwd=new_project, agent="a")
+    assert show2.json["data"]["state"] == "done"
+    author = git(new_project, "log", "-1", "--format=%an").stdout.strip()
+    assert author == "not-owner"
+
+
+def test_done_by_non_owner_missing_report_refusal(new_project: Path) -> None:
+    """The REPORT.md gate still holds for an agent that is not the owner."""
+    t1 = _add_task(new_project, "Do work")
+    result = run_kechup(["done", t1, "--evidence", "ev"], cwd=new_project, agent="not-owner")
     assert result.exit_code == 2
-    assert result.json["error"]["code"] == "not_owner"
+    assert result.json["error"]["code"] == "no_report"
+
+
+def test_done_by_non_owner_dirty_report_refusal(new_project: Path) -> None:
+    """The clean REPORT.md gate still holds for an agent that is not the owner."""
+    t1 = _add_task(new_project, "Do work")
+    show = run_kechup(["show", t1], cwd=new_project, agent="a")
+    folder = show.json["data"]["folder"]
+    report = new_project / folder / "REPORT.md"
+    report.write_text("done work\n")
+    run_kechup(["commit", f"{folder}/REPORT.md", "-m", "r", "--task", t1], cwd=new_project, agent="a")
+    report.write_text("changed after commit\n")
+    result = run_kechup(["done", t1, "--evidence", "ev"], cwd=new_project, agent="not-owner")
+    assert result.exit_code == 2
+    assert result.json["error"]["code"] == "dirty_report"
 
 
 def test_done_missing_report_refusal(new_project: Path) -> None:

@@ -24,9 +24,9 @@ Pass `--by <id>` on every write command. Use the `[Agent id: ...]` value from yo
 3. Record progress: `kechup note T<n> "<text>" --by <id>`.
 4. Write the result to `<task folder>/REPORT.md`.
 5. Commit: `kechup commit <paths> -m "<text>" --task T<n> --by <id>`.
-6. Tell the owner. Only the owner accepts work.
-7. After the owner says "I accept": `kechup done T<n> --evidence <task folder>/REPORT.md --by <owner_id>`.
-   `owner_id` is in `.kechup/config.json`.
+6. Run the tests and the review the task needs. Fix the failures.
+7. When all pass, close the task yourself: `kechup done T<n> --evidence <task folder>/REPORT.md --by <id>`.
+   Do not ask a human to accept the task.
 
 ## Quick Reference
 

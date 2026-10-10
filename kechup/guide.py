@@ -35,7 +35,8 @@ THE AGENT LOOP
                           Add a note at least once every 24 hours.
   5. Write the result:    <task folder>/REPORT.md
   6. Commit your files:   kechup commit <paths> -m "<text>" --task T<n> --by <id>
-  7. Hand off:            Tell the project owner. Only the owner runs `done`.
+  7. Close the task:       After your tests and review pass, run
+                          kechup done T<n> --evidence <path> --by <id>
   If you are stuck:       kechup block T<n> --reason "<why>" --by <id>
   If you stop the work:   kechup unclaim T<n> --by <id>
 
@@ -43,7 +44,7 @@ RULES FOR AGENTS
   - Commit with `kechup commit`. Do not use `git add -A` or `git commit -a`.
   - Name only your own files. A file that another agent staged stays out.
   - Do not edit the Work section of keche.md. Do not edit .kechup/ by hand.
-  - Do not run `done` when you are not the owner. It stops with not_owner.
+  - Run `done` only after the tests and the review pass. Any agent can run it.
   - On exit code 2, read the error and do not retry the same command.
   - On lock_timeout (exit 3), wait a few seconds and run the command again.
 
@@ -87,9 +88,9 @@ COMMANDS
       Set or clear the block reason. Not on done or dropped tasks.
   kechup assign T<n> --to <id> --by <id>
       Give the task to an agent. The task becomes doing.
-  kechup done T<n> --evidence <path> --by <owner id>
-      Owner only. Accept the work. <task folder>/REPORT.md must be
-      committed and must not have uncommitted changes.
+  kechup done T<n> --evidence <path> --by <id>
+      Close the task. Any agent can do this. <task folder>/REPORT.md
+      must be committed and must not have uncommitted changes.
   kechup reopen T<n> --reason "<text>" --by <id>
       Open a done task again. The reason becomes a note.
   kechup drop T<n> --reason "<text>" --by <id>
