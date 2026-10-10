@@ -164,6 +164,8 @@ kechup also computes a **displayed** state when you read the tasks. It never sto
 
 All write commands take `--by <id>`. Use `kechup <command> --help` for details.
 
+`kechup help` prints the full agent guide: the agent loop, the rules, every command, and every error code. Give it to an agent before it starts work. `kechup help --json` returns the same guide in the JSON envelope.
+
 ## JSON output
 
 Add `--json` to any command for machine output:
