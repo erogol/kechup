@@ -2,7 +2,7 @@
 
 kechup is a task tracker for one project folder. It is made for AI agents, and people can use it too.
 
-Each project keeps its tasks in a small JSON file and in git. Any agent can see the open tasks, claim one, record notes, commit its work, and hand the result to the project owner. Only the owner marks work as done.
+Each project keeps its tasks in a small JSON file and in git. Any agent can see the open tasks, claim one, record notes, commit its work, and close the task when its tests and review pass.
 
 kechup uses the Python standard library and the `git` command. It has no other dependencies.
 
@@ -60,8 +60,8 @@ kechup note T1 "Draft is in tasks/T1-write-the-faq/" --by agent-1
 echo "The FAQ is done." > tasks/T1-write-the-faq/REPORT.md
 kechup commit tasks/T1-write-the-faq/REPORT.md -m "FAQ report" --task T1 --by agent-1
 
-# The owner accepts the work
-kechup done T1 --evidence tasks/T1-write-the-faq/REPORT.md --by alice
+# The agent closes the task after its tests and review pass
+kechup done T1 --evidence tasks/T1-write-the-faq/REPORT.md --by agent-1
 
 kechup list
 ```
@@ -83,7 +83,7 @@ The agent ID becomes the git author of the commit. Use a stable ID, for example 
 
 ## Project owner
 
-Each project has one owner. Only the owner can run `done` and `config set-owner`.
+Each project has one owner. Only the owner can run `config set-owner`. Any agent can run `done`.
 
 Set the owner with `--owner <id>` on `new` or `adopt`. Without `--owner`, the owner ID is `owner`. Change the owner later with `kechup config set-owner <id>`.
 
@@ -150,7 +150,7 @@ kechup also computes a **displayed** state when you read the tasks. It never sto
 | `kechup note T<n> "<text>"` | Add a progress note to a `doing` task. Any agent can add a note. The note records its author. |
 | `kechup block T<n> --reason "<text>"` / `kechup unblock T<n>` | Block or unblock a task by hand. |
 | `kechup assign T<n> --to <id>` | Give a task to an agent. |
-| `kechup done T<n> --evidence <path>` | Accept the work. Owner only. The task must be `doing` and have a committed `REPORT.md`. |
+| `kechup done T<n> --evidence <path>` | Close the task. Any agent can do this. The task must have a committed `REPORT.md`. |
 | `kechup reopen T<n> --reason "<text>"` | Open a done task again. |
 | `kechup drop T<n> --reason "<text>"` | Drop a task. |
 | `kechup dep add T<n> --after T<m>` / `kechup dep rm T<n> T<m>` | Add or remove a dependency. |

@@ -313,9 +313,8 @@ def assign_task(project_root: Path, agent_id: str, task_id: str, to: str) -> dic
 def done_task(project_root: Path, agent_id: str, task_id: str, evidence: str) -> dict[str, Any]:
     with project_lock(project_root):
         begin_write(project_root)
-        config = load_config(project_root)
-        if agent_id != config["owner_id"]:
-            raise KechupError(2, "not_owner", "caller is not the configured project owner")
+        # Validate the config. Any agent can run `done`; there is no owner check.
+        load_config(project_root)
         tasks_file = load_tasks(project_root)
         task = _task_or_raise(tasks_file, task_id)
         if task.state in ("done", "dropped"):
