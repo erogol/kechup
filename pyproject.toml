@@ -6,8 +6,15 @@ build-backend = "setuptools.build_meta"
 name = "kechup"
 version = "1.0.0"
 description = "A project task tracker for agents, humans, and git."
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "Eren Gölge"}]
 requires-python = ">=3.12"
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/erogol/kechup"
+Issues = "https://github.com/erogol/kechup/issues"
 
 [project.scripts]
 kechup = "kechup.cli:main"
