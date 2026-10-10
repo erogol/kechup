@@ -10,7 +10,7 @@ def render_template(name: str, goal: str) -> str:
         f"# {name}\n\n"
         f"## Goal\n\n{goal}\n\n"
         f"## Rules\n\n"
-        f"- Claim a task before you start it. Use `kechup claim T<n>`.\n"
+        f"- Claim a task before you start it. Use `kechup claim T<n> --by <your agent id>`.\n"
         f"- Write a note with `kechup note T<n> \"<text>\"` to report progress. Any agent can add a note. The note records its author.\n"
         f"- Write `REPORT.md` in the task folder before you ask for `done`.\n\n"
         f"{START_MARKER}\n\n"

@@ -18,7 +18,9 @@ AGENT ID
     export KECHUP_AGENT=<id>      # used when --by is not given
   --by wins when both are set. A blank ID stops with no_agent_id (exit 3).
   Use one stable ID for all of your work, for example
-  keche:session:<id> or keche:mission:<id>.
+  <instance>:session:<id> or <instance>:mission:<id> (for example
+  keche-dev:session:<id>). Keche agents copy the [Agent id: ...] value
+  from their prompt.
   These commands need no ID: list, show, log, next (without --claim),
   snapshot, help.
 

@@ -79,7 +79,7 @@ kechup claim T1
 
 `--by` wins when both are set. A blank ID is refused. A write command without an ID stops with exit code 3.
 
-The agent ID becomes the git author of the commit. Use a stable ID, for example `keche:session:<id>` or `keche:mission:<id>`.
+The agent ID becomes the git author of the commit. Use a stable ID, for example `<instance>:session:<id>` or `<instance>:mission:<id>` (for example `keche-dev:session:<id>`). Keche agents copy the `[Agent id: ...]` value from their prompt.
 
 ## Project owner
 
