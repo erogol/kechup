@@ -10,6 +10,7 @@ from typing import Any, Callable
 from kechup import bootstrap, commands
 from kechup.agentid import resolve_agent
 from kechup.errors import KechupError
+from kechup.guide import GUIDE
 from kechup.jsonenv import dump, err_envelope, ok_envelope
 from kechup.project import find_project_root
 
@@ -21,7 +22,9 @@ def _split_csv(value: str | None) -> list[str]:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="kechup")
+    parser = argparse.ArgumentParser(
+        prog="kechup", epilog="Run `kechup help` for the full agent guide."
+    )
     parser.add_argument("--json", action="store_true", help="emit the --json envelope")
     sub = parser.add_subparsers(dest="command", required=True)
     # `--json` must work both before and after the subcommand name, since
@@ -145,6 +148,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_repair = sub.add_parser("repair", parents=[json_parent])
     p_repair.add_argument("--by")
 
+    sub.add_parser("help", parents=[json_parent], help="show the full agent guide")
+
     return parser
 
 
@@ -162,6 +167,9 @@ def _needs_agent(command: str, add_kind: str | None, dep_kind: str | None) -> bo
 def dispatch(args: argparse.Namespace) -> dict[str, Any]:
     command = args.command
     cwd = Path.cwd()
+
+    if command == "help":
+        return ok_envelope("help", {"guide": GUIDE})
 
     if command == "new":
         agent_id = resolve_agent(args.by)
@@ -345,6 +353,9 @@ def _print_human(envelope: dict[str, Any]) -> None:
     if envelope["ok"]:
         command = envelope["command"]
         data = envelope["data"]
+        if command == "help":
+            print(data["guide"], end="")
+            return
         if command == "list" and "tasks" in data:
             for row in data["tasks"]:
                 print(
