@@ -14,6 +14,8 @@ Agents forget. A new session does not know what the last session did. kechup put
 - `.kechup/tasks.json` holds the tasks.
 - git holds the history. Every kechup write is one git commit, with the agent ID as the author.
 
+`keche.md` is a plain Markdown file with notes about the project: the goal, the decisions, and the open questions. An agent reads it first when it starts work. kechup changes only the Work section. You write the rest.
+
 kechup also watches git. If someone reverts accepted work with a plain `git revert`, kechup shows the task as reverted, and the tasks that depend on it become blocked again.
 
 ## Requirements
@@ -226,4 +228,4 @@ The tests use real temporary git repositories and the real `git` command. They d
 
 ## Status
 
-Version 1.0.0. Private project. No license yet.
+Version 1.0.0. MIT license. See `LICENSE`.
