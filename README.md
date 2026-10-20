@@ -38,17 +38,37 @@ kechup is a good choice when you want agent work to stay in plain git, with a cl
 ## Install
 
 ```sh
-git clone <repo url> kechup
-cd kechup
-pip install -e .
+pip install "git+https://github.com/erogol/kechup"
 kechup --help
 ```
 
-You can also run kechup without an install:
+For development, install from a clone:
 
 ```sh
-PYTHONPATH=/path/to/kechup python3 -m kechup --help
+git clone https://github.com/erogol/kechup
+cd kechup
+pip install -e .
 ```
+
+## Use kechup with your agent
+
+kechup does nothing until your agent knows about it. Use one of these two methods.
+
+**Instruction file.** Add these lines to the instruction file of your agent, for example `AGENTS.md` or `CLAUDE.md`:
+
+```markdown
+## Tasks
+
+This project uses kechup for tasks. Run `kechup help` once before you start work.
+Pass `--by <your agent id>` on every kechup write command. Use one ID for the whole session.
+Find work with `kechup next --claim`. Write the result to the REPORT.md in the task folder.
+Commit with `kechup commit`, not with a plain `git commit`.
+Close the task with `kechup done` after its tests and review pass.
+```
+
+**Skill file.** If your agent supports skills, copy `skills/kechup/SKILL.md` from this repo into its skill folder.
+
+To check the setup, ask the agent to "take the next kechup task". The agent must run `kechup next --claim` with its ID.
 
 ## Quick start
 
