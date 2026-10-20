@@ -18,6 +18,18 @@ Agents forget. A new session does not know what the last session did. kechup put
 
 kechup also watches git. If someone reverts accepted work with a plain `git revert`, kechup shows the task as reverted, and the tasks that depend on it become blocked again.
 
+### Why use kechup
+
+- **Only Python and git.** kechup needs no server, no database, no account, no network access and no API key. It runs on a locked-down server and in a sandbox.
+- **git is the only record.** kechup keeps no second copy of the state. Every claim, note and close is one git commit, with the agent ID as the author. Use `git log`, `git blame` and `git revert` to review agent work.
+- **Done needs evidence.** A task closes only when its `REPORT.md` is committed and clean. A status change alone does not close a task.
+- **kechup follows git.** A plain `git revert` of finished work reopens the task. The tasks that wait for it become blocked again.
+- **Safe for many agents.** A lock stops two agents from claiming the same task. `kechup next` gives the next task with no open blockers.
+- **Small footprint.** Setup adds `.kechup/`, the Work section of `keche.md`, a `.gitignore` if the project has none, and one git hook.
+- **Made for agents.** Every command accepts `--json` and returns stable error codes. `kechup help` prints the full agent guide.
+
+kechup is a good choice when you want agent work to stay in plain git, with a clear trail and a clear close. Use a different tool if you need a visual board, sync between machines, or tasks that an AI writes for you.
+
 ## Requirements
 
 - Python 3.12 or newer
