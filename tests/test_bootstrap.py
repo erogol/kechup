@@ -196,14 +196,24 @@ def test_repair_invalid_file_refuses(new_project: Path) -> None:
 
 
 def test_repair_stale_hook_rewritten(new_project: Path) -> None:
+    from kechup import gitutil
+
     hook_path = new_project / ".git" / "hooks" / "prepare-commit-msg"
-    hook_path.write_text("#!/bin/sh\necho stale\n")
+    hook_path.write_text(f"#!/bin/sh\n{gitutil.HOOK_MARKER}\necho stale\n")
     result = run_kechup(["repair"], cwd=new_project, agent="owner")
     assert result.exit_code == 0, result.stderr
     assert result.json["data"]["hook_rewritten"] is True
-    from kechup import gitutil
 
     assert gitutil.hook_present_and_current(new_project)
+
+
+def test_repair_refuses_foreign_hook(new_project: Path) -> None:
+    hook_path = new_project / ".git" / "hooks" / "prepare-commit-msg"
+    hook_path.write_text("#!/bin/sh\necho mine\n")
+    result = run_kechup(["repair"], cwd=new_project, agent="owner")
+    assert result.exit_code == 2, result.stdout
+    assert result.json["error"]["code"] == "foreign_hook"
+    assert hook_path.read_text() == "#!/bin/sh\necho mine\n"
 
 
 def test_adopt_recovery_commit_failure_refuses_not_success(tmp_dir: Path) -> None:

@@ -6,11 +6,29 @@ from pathlib import Path
 
 MAX_FILE_BYTES = 5 * 1024 * 1024
 
-_SECRET_NAME_SUFFIXES = (".pem", ".key", ".p12")
-_SECRET_NAME_PREFIXES = ("id_rsa",)
-_SECRET_NAME_EXACT = (".env",)
-_SECRET_NAME_SUBSTRINGS = ("secret", "credential")
+_SECRET_NAME_SUFFIXES = (".pem", ".key", ".p12", ".pfx", ".jks", ".keystore", ".kdbx", ".env")
+_SECRET_NAME_PREFIXES = ("id_rsa", "id_dsa", "id_ecdsa", "id_ed25519")
+_SECRET_NAME_EXACT = (
+    ".env",
+    ".npmrc",
+    ".netrc",
+    ".pypirc",
+    ".pgpass",
+    ".git-credentials",
+    "oauth.json",
+    "token.json",
+    "token.txt",
+)
+_SECRET_NAME_SUBSTRINGS = (
+    "secret",
+    "credential",
+    "kubeconfig",
+    "service-account",
+    "service_account",
+)
 _SECRET_DIR_NAMES = ("secrets",)
+# `.env.<x>` files hold real values, except these committed templates.
+_ENV_TEMPLATE_NAMES = (".env.example", ".env.sample", ".env.template")
 
 
 def is_secret_like(path: Path) -> bool:
@@ -21,6 +39,8 @@ def is_secret_like(path: Path) -> bool:
     if any(name.startswith(prefix) for prefix in _SECRET_NAME_PREFIXES):
         return True
     if name in _SECRET_NAME_EXACT:
+        return True
+    if name.startswith(".env.") and name not in _ENV_TEMPLATE_NAMES:
         return True
     if any(token in name for token in _SECRET_NAME_SUBSTRINGS):
         return True

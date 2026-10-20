@@ -12,6 +12,9 @@ from typing import Any
 from kechup.errors import KechupError
 
 TASK_ID_RE = re.compile(r"^T(\d+)$")
+# A full git commit id (SHA-1 or SHA-256). Values go to git as arguments,
+# so a value that starts with "-" must never get through.
+COMMIT_ID_RE = re.compile(r"\A(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
 TITLE_MAX_CHARS = 200
 TASKS_SCHEMA_VERSION = 1
 CONFIG_SCHEMA_VERSION = 1
@@ -190,6 +193,9 @@ def _validate_tasks_schema(data: Any) -> None:
             value = task.get(field_name)
             if value is not None and not isinstance(value, str):
                 raise _invalid_tasks(f"task {task_id} field {field_name} must be a string or null")
+        done_commit = task.get("done_commit")
+        if done_commit is not None and not COMMIT_ID_RE.match(done_commit):
+            raise _invalid_tasks(f"task {task_id} field done_commit must be a full commit id")
         priority = task.get("priority", 5)
         if isinstance(priority, bool) or not isinstance(priority, int):
             raise _invalid_tasks(f"task {task_id} field priority must be an integer")

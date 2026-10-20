@@ -192,7 +192,7 @@ An error looks like this:
 ## Git rules
 
 - kechup commits only the files that it changes or that you name. It never runs `git add -A`. A file that another agent staged stays out of the kechup commit.
-- kechup refuses a file over 5 MB and a file with a secret-like name, for example `id_rsa` or `.env`. `snapshot` skips these files and lists them in its output.
+- kechup refuses a file over 5 MB and a file with a secret-like name, for example `id_rsa`, `.env` or `.env.local`. This check looks only at file names, not at file content. `snapshot` skips these files and lists them in its output.
 - `adopt` checks the folder first. It refuses large files and secret-like files that `.gitignore` does not exclude. The default `.gitignore` excludes media files, model checkpoints, virtual environments, `secrets/`, and `.env`.
 - kechup never writes to a git repository that it did not create or adopt.
 
@@ -208,7 +208,7 @@ kechup finds the revert at the next read. The task shows `done — WORK REVERTED
 
 If the task must be done again, run `kechup reopen T<n> --reason "<text>"`.
 
-kechup installs a `prepare-commit-msg` hook. The hook marks a revert commit when the commit message does not have the standard git revert line.
+kechup installs a `prepare-commit-msg` hook. The hook marks a revert commit when the commit message does not have the standard git revert line. If the project already has a different `prepare-commit-msg` hook, kechup does not replace it. The command stops with `foreign_hook`. Move the old hook away or merge it by hand, then run the command again.
 
 ## Concurrency
 

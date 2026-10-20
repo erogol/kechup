@@ -5,6 +5,7 @@ from __future__ import annotations
 import fcntl
 import hashlib
 import os
+import stat
 import tempfile
 import time
 from contextlib import contextmanager
@@ -64,7 +65,31 @@ def bootstrap_lock_path(target: Path) -> Path:
         return Path(base) / f"{digest}.lock"
     # One lock folder per user: a folder made by one user is not writable
     # for another user.
-    return Path(tempfile.gettempdir()) / f"kechup-locks-{os.getuid()}" / f"{digest}.lock"
+    lock_dir = Path(tempfile.gettempdir()) / f"kechup-locks-{os.getuid()}"
+    _ensure_private_dir(lock_dir)
+    return lock_dir / f"{digest}.lock"
+
+
+def _ensure_private_dir(lock_dir: Path) -> None:
+    """Make the shared-temp lock folder, or accept an existing one only when
+    it is a real folder that this user owns and nobody else can write to.
+    Another user can make the folder name first in a shared temp dir."""
+    try:
+        os.mkdir(lock_dir, 0o700)
+    except FileExistsError:
+        pass
+    st = os.lstat(lock_dir)
+    if (
+        not stat.S_ISDIR(st.st_mode)
+        or st.st_uid != os.getuid()
+        or st.st_mode & (stat.S_IWGRP | stat.S_IWOTH)
+    ):
+        raise KechupError(
+            3,
+            "unsafe_lock_dir",
+            f"lock folder {lock_dir} is not a private folder of this user; "
+            f"if you own it, run `chmod 700 {lock_dir}`, or set KECHUP_LOCK_DIR",
+        )
 
 
 @contextmanager

@@ -131,9 +131,10 @@ EXIT CODES AND ERRORS
      no_open_task, exists, no_keche_md, outer_repo
   2  state conflict: already_claimed, not_doing, not_owner, not_done,
      terminal_state, no_report, dirty_report, dirty_tree, tag_exists,
-     unsafe_file
-  3  environment: no_agent_id, not_a_project, lock_timeout, crash_residue,
-     secret_like, too_large, path_escape, not_found, git_failure, git_error,
+     unsafe_file, foreign_hook
+  3  environment: no_agent_id, not_a_project, lock_timeout, unsafe_lock_dir,
+     crash_residue, secret_like, too_large, path_escape, not_found,
+     git_failure, git_error,
      invalid_tasks, invalid_config, bad_tasks_json, bad_config_json
   crash_residue: an earlier command stopped before its commit.
   Run `kechup repair --by <id>`, then run your command again.

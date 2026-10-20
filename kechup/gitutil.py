@@ -9,6 +9,7 @@ import time
 from pathlib import Path
 
 from kechup.errors import KechupError
+from kechup.model import COMMIT_ID_RE
 
 INDEX_LOCK_RETRY_DELAYS_MS = (100, 200, 400, 800, 1600)
 
@@ -90,9 +91,30 @@ def install_hook(project_root: Path) -> None:
     hooks_dir = project_root / ".git" / "hooks"
     hooks_dir.mkdir(parents=True, exist_ok=True)
     hook_path = hooks_dir / "prepare-commit-msg"
+    check_hook_installable(project_root)
     hook_path.write_text(HOOK_SCRIPT, encoding="utf-8")
     mode = hook_path.stat().st_mode
     hook_path.chmod(mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+
+def check_hook_installable(project_root: Path) -> None:
+    """Refuse when the project has a prepare-commit-msg hook that kechup did
+    not write, or a symlink at that path. kechup never replaces a user hook."""
+    hook_path = project_root / ".git" / "hooks" / "prepare-commit-msg"
+    message = (
+        f"{hook_path} is not a kechup hook; move it away or merge it by hand, "
+        "then run the command again"
+    )
+    if hook_path.is_symlink():
+        raise KechupError(2, "foreign_hook", message)
+    if not hook_path.exists():
+        return
+    try:
+        old = hook_path.read_bytes()
+    except OSError as exc:
+        raise KechupError(3, "git_error", f"cannot read {hook_path}: {exc}") from exc
+    if HOOK_MARKER.encode("utf-8") not in old:
+        raise KechupError(2, "foreign_hook", message)
 
 
 def hook_present_and_current(project_root: Path) -> bool:
@@ -275,7 +297,10 @@ def revert_target(project_root: Path, commit_id: str) -> str | None:
         return match.group(1)
     trailers = commit_trailers(project_root, commit_id, "Kechup-Reverts")
     if trailers:
-        return trailers[0].strip()
+        target = trailers[0].strip()
+        # Only a full commit id: the value goes to git as an argument.
+        if COMMIT_ID_RE.match(target):
+            return target
     return None
 
 

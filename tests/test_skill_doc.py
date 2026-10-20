@@ -21,3 +21,12 @@ def test_guide_has_neutral_agent_id_example() -> None:
     from kechup.guide import GUIDE
 
     assert "agent-1" in GUIDE
+
+
+def test_public_docs_use_neutral_agent_ids() -> None:
+    from kechup.guide import GUIDE
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    skill = SKILL_PATH.read_text(encoding="utf-8")
+    for text in (GUIDE, readme, skill):
+        assert "agent-1" in text

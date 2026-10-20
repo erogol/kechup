@@ -388,6 +388,7 @@ def new_project(
         problems = _scan_for_unsafe_files(target)
         if problems:
             raise _unsafe_file_error(problems)
+        gitutil.check_hook_installable(target)
 
         is_fresh_git = not (target / ".git").exists()
         with _maybe_project_lock(target):
@@ -446,6 +447,7 @@ def adopt_project(
         problems = _scan_for_unsafe_files(target)
         if problems:
             raise _unsafe_file_error(problems)
+        gitutil.check_hook_installable(target)
 
         is_fresh_git = not (target / ".git").exists()
         with _maybe_project_lock(target):
