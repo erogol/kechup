@@ -128,8 +128,6 @@ def _worktree_file_safe(project_root: Path, rel: str, intended: bytes) -> bool:
     """The on-disk file must be a regular, non-executable file whose
     bytes equal the intended bytes. A symlink (also in a parent
     directory), a directory, or a mode change refuses."""
-    if (project_root / rel).is_symlink():
-        return False
     current = project_root
     for part in Path(rel).parts:
         current = current / part

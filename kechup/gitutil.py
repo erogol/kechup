@@ -436,7 +436,11 @@ def index_entry(project_root: Path, rel_path: str) -> tuple[str, str] | None:
     if len(lines) > 1:
         return ("CONFLICT", "")
     meta = lines[0].split("\t", 1)[0].split()
-    # <mode> <sha> <stage>\t<path>
+    # <mode> <sha> <stage>\t<path>. Stage 0 is the normal entry. A
+    # single nonzero-stage entry (an add/delete conflict) is a
+    # conflict: callers must refuse it.
+    if len(meta) != 3 or meta[2] != "0":
+        return ("CONFLICT", "")
     return (meta[0], meta[1])
 
 

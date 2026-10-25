@@ -389,6 +389,56 @@ def test_staged_deletion_residue_stays_refused(new_project: Path) -> None:
     assert result.json["error"]["code"] == "crash_residue"
 
 
+def test_single_conflict_stage_entry_residue_stays_refused(new_project: Path) -> None:
+    t1 = _add_task(new_project, "one")
+    t2 = _add_task(new_project, "two")
+
+    _crash_and_kill(new_project, t1, "before_commit")
+    # A single nonzero-stage index entry (an add/delete conflict) that
+    # holds the intended bytes: `ls-files --stage` shows one line with
+    # stage 3. The stage check must refuse it, and the recovery must
+    # not run `git add` over the conflict.
+    tasks_json = new_project / ".kechup" / "tasks.json"
+    sha = git(new_project, "hash-object", "-w", "--", str(tasks_json)).stdout.strip()
+    head_before = git(new_project, "rev-parse", "HEAD").stdout.strip()
+    index_before = git(new_project, "ls-files", "--stage", "--", ".kechup/tasks.json").stdout
+    # Feed the entry through stdin: the command runs in the project cwd,
+    # so the entry file stays inside the project. Format:
+    # <mode> SP <type> SP <sha> SP <stage> TAB <path>. Remove the
+    # normal stage-0 entry first: the single-nonzero-stage case is a
+    # real add/delete conflict state.
+    git(new_project, "update-index", "--force-remove", "--", ".kechup/tasks.json")
+    entry_path = new_project / ".kechup" / "conflict-entry"
+    entry_path.write_text(
+        f"100644 blob {sha} 3\t.kechup/tasks.json\n", encoding="utf-8"
+    )
+    with open(entry_path, "rb") as fh:
+        proc = subprocess.run(
+            ["git", "update-index", "--index-info"],
+            cwd=new_project, stdin=fh,
+        )
+    entry_path.unlink()
+    assert proc.returncode == 0, "update-index --index-info must succeed"
+    # Exactly one index line with stage 3 must remain.
+    stage_lines = git(
+        new_project, "ls-files", "--stage", "--", ".kechup/tasks.json"
+    ).stdout
+    assert stage_lines == f"100644 {sha} 3\t.kechup/tasks.json\n"
+
+    result = run_kechup(["claim", t2], cwd=new_project, agent="agent-b")
+    assert result.exit_code == 3
+    assert result.json["error"]["code"] == "crash_residue"
+    # The refusal must leave HEAD, the conflict index, and the journal
+    # untouched.
+    assert git(new_project, "rev-parse", "HEAD").stdout.strip() == head_before
+    assert (
+        git(new_project, "ls-files", "--stage", "--", ".kechup/tasks.json").stdout
+        == f"100644 {sha} 3\t.kechup/tasks.json\n"
+    )
+    assert _journal_path(new_project).exists()
+    assert index_before  # sanity: a stage-0 entry existed before
+
+
 def test_journal_version_true_and_one_float_refuse(new_project: Path) -> None:
     t1 = _add_task(new_project, "one")
     t2 = _add_task(new_project, "two")
