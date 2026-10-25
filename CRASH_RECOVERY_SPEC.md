@@ -100,10 +100,14 @@ unjournaled and fail-closed.
 |---|---|
 | dirty, no journal | refuse `crash_residue` (unchanged) |
 | dirty, journal invalid (schema/paths/extra keys) | refuse |
+| dirty, journal version not the integer 1 | refuse |
+| dirty, journal with a duplicate JSON key | refuse |
 | dirty, `base_head` != HEAD | refuse |
 | dirty guarded path not journaled | refuse |
 | journaled path, on-disk bytes != journal bytes | refuse |
+| journaled path is a symlink, or has an exec bit | refuse |
 | journaled path, foreign staged index content | refuse |
+| journaled path, index entry missing but path exists at HEAD | refuse |
 | clean, journal present | clear journal, proceed |
 | clean, no journal | proceed (unchanged) |
 
