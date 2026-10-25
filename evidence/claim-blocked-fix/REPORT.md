@@ -35,8 +35,13 @@ outside `todo` and `doing (stale)`.
   `error [task_blocked]: T1 is blocked; unblock it first`.
 - Base suite (40e117f, private export): 216 passed.
 - Candidate suite: 218 passed. No new failures.
-- Advisor review of the complete diff: APPROVE. Nonblocking suggestion
-  (assert exact message and payload) was applied after the review.
+- Advisor review 1 (pre-commit diff): APPROVE. Its nonblocking
+  suggestion (assert exact message and payload) was applied.
+- Advisor review 2 (final complete committed diff, including the
+  later test and SPEC changes): APPROVE, model openai/gpt-6-astra
+  (backup model; the primary launcher auth failed). No blockers.
+- dev:plan skill loaded. Its validate gate maps to the trace
+  evidence; the done state is the observable CLI behavior above.
 
 ## Out of scope
 
