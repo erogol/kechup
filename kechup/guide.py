@@ -74,8 +74,9 @@ COMMANDS
       Show the next task: todo or stale doing, lowest priority number,
       then lowest ID. --claim also claims it. no_open_task when none.
   kechup claim T<n> --by <id>
-      Take a todo or stale task. Any other state stops with
-      already_claimed (exit 2), also for a blocked task.
+      Take a todo or stale task. A blocked task stops with
+      task_blocked (exit 2); unblock it first. Any other state
+      stops with already_claimed (exit 2).
   kechup unclaim T<n> --by <id>
       Give a doing task back to todo. Only the claim owner can do this,
       or any agent when the claim is stale.
@@ -129,9 +130,9 @@ EXIT CODES AND ERRORS
   0  success
   1  bad input: unknown_task, cycle, bad_title, bad_folder, not_in_after,
      no_open_task, exists, no_keche_md, outer_repo
-  2  state conflict: already_claimed, not_doing, not_owner, not_done,
-     terminal_state, no_report, dirty_report, dirty_tree, tag_exists,
-     unsafe_file, foreign_hook
+  2  state conflict: already_claimed, task_blocked, not_doing, not_owner,
+     not_done, terminal_state, no_report, dirty_report, dirty_tree,
+     tag_exists, unsafe_file, foreign_hook
   3  environment: no_agent_id, not_a_project, lock_timeout, unsafe_lock_dir,
      crash_residue, secret_like, too_large, path_escape, not_found,
      git_failure, git_error,

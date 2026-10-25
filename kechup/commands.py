@@ -223,6 +223,13 @@ def claim_task(project_root: Path, agent_id: str, task_id: str) -> dict[str, Any
         tasks_file = load_tasks(project_root)
         task = _task_or_raise(tasks_file, task_id)
         displayed = state_mod.compute_displayed_state(project_root, tasks_file, task)
+        if displayed.state == "blocked":
+            raise KechupError(
+                2,
+                "task_blocked",
+                f"{task_id} is blocked; unblock it first",
+                {"id": task_id, "blocker_cause": displayed.cause},
+            )
         if displayed.state not in ("todo", "doing (stale)"):
             raise KechupError(2, "already_claimed", f"already claimed by {task.owner}")
         task.owner = agent_id

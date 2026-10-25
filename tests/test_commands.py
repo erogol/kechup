@@ -89,6 +89,34 @@ def test_claim_wrong_state_refusal(new_project: Path) -> None:
     assert result.json["error"]["code"] == "already_claimed"
 
 
+def test_claim_blocked_unowned_refusal(new_project: Path) -> None:
+    """A blocked task with no owner must report task_blocked, not
+    already_claimed with owner None. Claim must not change the task."""
+    t1 = _add_task(new_project, "Do work")
+    run_kechup(["block", t1, "--reason", "waiting on input"], cwd=new_project, agent="a")
+    result = run_kechup(["claim", t1], cwd=new_project, agent="agent-b")
+    assert result.exit_code == 2
+    assert result.json["error"]["code"] == "task_blocked"
+    assert result.json["error"]["message"] == "T1 is blocked; unblock it first"
+    assert result.json["data"]["id"] == t1
+    assert result.json["data"]["blocker_cause"] == "waiting on input"
+    show = run_kechup(["show", t1], cwd=new_project, agent="agent-b")
+    assert show.json["data"]["state"] == "blocked"
+    task = json.loads((new_project / ".kechup" / "tasks.json").read_text())["tasks"][t1]
+    assert task["owner"] is None
+    assert task["state"] == "todo"
+
+
+def test_claim_blocked_keeps_owner_case_refusal(new_project: Path) -> None:
+    """A blocked task must report task_blocked also when it is owned."""
+    t1 = _add_task(new_project, "Do work")
+    run_kechup(["claim", t1], cwd=new_project, agent="agent-a")
+    run_kechup(["block", t1, "--reason", "waiting on input"], cwd=new_project, agent="a")
+    result = run_kechup(["claim", t1], cwd=new_project, agent="agent-b")
+    assert result.exit_code == 2
+    assert result.json["error"]["code"] == "task_blocked"
+
+
 def test_agent_id_blank_after_strip_refuses(new_project: Path) -> None:
     """R4: a blank `--by` (spaces only) must refuse, not pass through. A
     blank `KECHUP_AGENT` must count as missing. A valid `--by` wins over a
