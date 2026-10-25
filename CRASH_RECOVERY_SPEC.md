@@ -17,8 +17,12 @@ is still active. Automatic recovery needs new stored evidence.
 ## 2. Trust boundary
 
 Concurrent writers that honor the kechup project lock serialize through
-it. A journal observed while the lock is held belongs to a kechup
-writer that is no longer running (a live writer holds the lock).
+it. A journal observed while the lock is held therefore proves only one
+thing: no OTHER lock-honoring kechup writer is running. Holding the
+lock is exclusive ownership of the lock; it does not prove the
+original writer process is dead and does not exclude simultaneous
+mutation by tools that ignore the lock. Concurrency protection covers
+only cooperating kechup commands.
 Concurrent mutation by tools that ignore the lock (a text editor, raw
 git) is outside the supported threat model, EXCEPT that the recovery
 predicate refuses any residue such a tool can verifiably leave: a
