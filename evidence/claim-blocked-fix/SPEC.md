@@ -32,12 +32,13 @@ when present. Guide text updated: claim also reports
 
 ## Tests
 
-- `test_claim_blocked_refusal`: block a todo task, claim fails exit 2
-  with `task_blocked`, task stays blocked with no owner.
-- `test_claim_stale_blocked_refusal`: same for a stale doing task.
+- `test_claim_blocked_unowned_refusal`: block a todo task, claim fails
+  exit 2 with `task_blocked` and the exact message, task stays blocked
+  with no owner. It also asserts the `id` and `blocker_cause` data.
+- `test_claim_blocked_keeps_owner_case_refusal`: same error for a
+  blocked task that an agent owns.
 - Existing `test_claim_wrong_state_refusal` stays green and proves
   the owned case.
-- Guide check: error code documented.
 
 ## Out of scope
 
