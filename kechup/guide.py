@@ -138,7 +138,8 @@ EXIT CODES AND ERRORS
      git_failure, git_error,
      invalid_tasks, invalid_config, bad_tasks_json, bad_config_json
   crash_residue: an earlier command stopped before its commit.
-  Run `kechup repair --by <id>`, then run your command again.
+  kechup now completes a proven kechup transaction by itself. Other
+  changes stay refused. Then run `kechup repair --by <id>`.
 
 REVERTS
   To undo work, use plain git:

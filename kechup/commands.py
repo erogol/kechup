@@ -5,9 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from kechup import gitutil, state as state_mod
+from kechup import gitutil, journal, state as state_mod
 from kechup.errors import KechupError
-from kechup.guard import check_no_crash_residue
+from kechup.guard import GUARDED_PATHS, check_no_crash_residue
 from kechup.lock import project_lock
 from kechup.model import (
     Task,
@@ -18,6 +18,8 @@ from kechup.model import (
     next_task_id,
     save_config,
     save_tasks,
+    serialize_config,
+    serialize_tasks,
     slugify,
     tasks_json_path,
     validate_title,
@@ -31,7 +33,7 @@ from kechup.safety import (
     resolve_within,
 )
 from kechup.timeutil import now_iso
-from kechup.worksection import rewrite_keche_md
+from kechup.worksection import build_keche_md_text, rewrite_keche_md
 
 NON_TERMINAL_STATES = ("todo", "doing")
 
@@ -80,16 +82,29 @@ def _write_through(
     tasks_file: TasksFile,
     message: str,
 ) -> None:
+    keche_md_text = build_keche_md_text(project_root, tasks_file)
+    journal.record(
+        project_root,
+        agent_id,
+        message,
+        {
+            ".kechup/tasks.json": serialize_tasks(tasks_file),
+            "keche.md": keche_md_text,
+        },
+    )
     save_tasks(project_root, tasks_file)
     rewrite_keche_md(project_root, tasks_file)
     paths = [".kechup/tasks.json", "keche.md"]
     gitutil.git_add(project_root, paths)
     gitutil.commit(project_root, agent_id, message, paths=paths, only=True)
+    journal.clear(project_root)
 
 
 def begin_write(project_root: Path) -> None:
     """Dirty-metadata guard, then the revert-logging prelude, run right
-    after the project lock (section 6)."""
+    after the project lock (section 6). The guard recovers a proven,
+    complete, kechup-owned interrupted transaction; every other residue
+    stays refused (CRASH_RECOVERY_SPEC v2)."""
     check_no_crash_residue(project_root)
     run_revert_logging_prelude(project_root)
 
@@ -270,12 +285,15 @@ def note_task(project_root: Path, agent_id: str, task_id: str, text: str) -> dic
         task.last_note_at = now_iso()
         if task.owner == agent_id:
             task.claimed_at = now_iso()
+        message = f"Note {task_id}\n\nTask: {task_id}"
+        journal.record(
+            project_root, agent_id, message, {".kechup/tasks.json": serialize_tasks(tasks_file)}
+        )
         save_tasks(project_root, tasks_file)
         paths = [".kechup/tasks.json"]
         gitutil.git_add(project_root, paths)
-        gitutil.commit(
-            project_root, agent_id, f"Note {task_id}\n\nTask: {task_id}", paths=paths, only=True
-        )
+        gitutil.commit(project_root, agent_id, message, paths=paths, only=True)
+        journal.clear(project_root)
         return {"id": task_id}
 
 
@@ -422,17 +440,23 @@ def show(
         with project_lock(project_root):
             begin_write(project_root)
             tasks_file = load_tasks(project_root)
+            keche_md_text = build_keche_md_text(project_root, tasks_file)
+            message = "Rebuild keche.md\n\nTask: none"
+            journal.record(
+                project_root, agent_id, message, {"keche.md": keche_md_text}
+            )
             rewrite_keche_md(project_root, tasks_file)
             paths = ["keche.md"]
             gitutil.git_add(project_root, paths)
             gitutil.commit(
                 project_root,
                 agent_id,
-                "Rebuild keche.md\n\nTask: none",
+                message,
                 paths=paths,
                 only=True,
                 allow_empty=True,
             )
+            journal.clear(project_root)
     else:
         tasks_file = load_tasks(project_root)
     if task_id is None:
@@ -666,10 +690,14 @@ def config_set_owner(project_root: Path, agent_id: str, new_owner: str) -> dict[
         if agent_id != config["owner_id"]:
             raise KechupError(2, "not_owner", "caller is not the current project owner")
         config["owner_id"] = new_owner
+        message = "Config set-owner\n\nTask: none"
+        journal.record(
+            project_root, agent_id, message,
+            {".kechup/config.json": serialize_config(config)},
+        )
         save_config(project_root, config)
         paths = [".kechup/config.json"]
         gitutil.git_add(project_root, paths)
-        gitutil.commit(
-            project_root, agent_id, "Config set-owner\n\nTask: none", paths=paths, only=True
-        )
+        gitutil.commit(project_root, agent_id, message, paths=paths, only=True)
+        journal.clear(project_root)
         return {"owner_id": new_owner}

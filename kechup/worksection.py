@@ -64,19 +64,33 @@ def render_work_section(project_root: Path, tasks_file: TasksFile) -> str:
     return "\n".join(lines) + "\n"
 
 
-def rewrite_keche_md(project_root: Path, tasks_file: TasksFile) -> None:
-    """Rewrites only the text between the two marker lines in keche.md."""
+def build_keche_md_text(project_root: Path, tasks_file: TasksFile) -> str:
+    """The exact text `rewrite_keche_md` will leave on disk
+    (CRASH_RECOVERY_SPEC v2). Reads the current file only; HEAD and
+    the task data are unchanged until the write, so the bytes the
+    journal records equal the bytes the write produces."""
     keche_md_path = project_root / "keche.md"
     section = render_work_section(project_root, tasks_file)
     if not keche_md_path.exists():
-        keche_md_path.write_text(section, encoding="utf-8")
-        return
+        return section
     text = keche_md_path.read_text(encoding="utf-8")
     start_idx = text.find(START_MARKER)
     end_idx = text.find(END_MARKER)
     if start_idx == -1 or end_idx == -1:
-        new_text = text.rstrip("\n") + "\n\n" + section
-    else:
-        end_idx_full = end_idx + len(END_MARKER)
-        new_text = text[:start_idx] + section.rstrip("\n") + text[end_idx_full:]
-    keche_md_path.write_text(new_text, encoding="utf-8")
+        return text.rstrip("\n") + "\n\n" + section
+    end_idx_full = end_idx + len(END_MARKER)
+    return text[:start_idx] + section.rstrip("\n") + text[end_idx_full:]
+
+
+def rewrite_keche_md(project_root: Path, tasks_file: TasksFile) -> None:
+    """Rewrites only the text between the two marker lines in keche.md."""
+    (project_root / "keche.md").write_text(
+        build_keche_md_text(project_root, tasks_file), encoding="utf-8"
+    )
+
+
+def write_keche_md(project_root: Path, text: str) -> None:
+    """Write text that `build_keche_md_text` produced. The journaled
+    write paths use this, so the written bytes always equal the bytes
+    the intent journal recorded."""
+    (project_root / "keche.md").write_text(text, encoding="utf-8")

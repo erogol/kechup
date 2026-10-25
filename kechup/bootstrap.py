@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterator
 
-from kechup import gitutil
+from kechup import gitutil, journal
 from kechup.errors import KechupError
 from kechup.kechemd_template import render_template
 from kechup.lock import bootstrap_lock, project_lock
@@ -522,8 +522,12 @@ def repair(project_root: Path, caller: str) -> dict[str, Any]:
                 only=True,
             )
             committed = True
+        journal_was_present = journal.journal_path(project_root).exists()
+        if journal_was_present:
+            journal.clear(project_root)
         return {
             "hook_rewritten": hook_rewritten,
             "owner_id": config["owner_id"],
             "committed": committed,
+            "journal_cleared": journal_was_present,
         }

@@ -393,3 +393,93 @@ def log_entries_for_task(project_root: Path, task_id: str) -> list[dict[str, str
             {"hash": commit_id, "author": author, "date": date, "subject": subject}
         )
     return entries
+
+
+def git_dir(project_root: Path) -> Path:
+    """The repository's git dir, resolved to an absolute path."""
+    result = _run(["rev-parse", "--absolute-git-dir"], cwd=project_root)
+    return Path(result.stdout.strip())
+
+
+def dirty_paths(project_root: Path, paths: list[str]) -> list[str]:
+    """The subset of `paths` with changes in the worktree or index,
+    NUL-delimited so names with spaces or non-ASCII pass unquoted."""
+    result = _run(
+        ["status", "--porcelain=v1", "-z", "--untracked-files=all", "--", *paths],
+        cwd=project_root,
+    )
+    dirty: list[str] = []
+    fields = result.stdout.split("\0")
+    i = 0
+    while i < len(fields):
+        entry = fields[i]
+        i += 1
+        if not entry:
+            continue
+        status = entry[:2]
+        path = entry[3:]
+        if "R" in status or "C" in status:
+            i += 1
+        if path not in dirty:
+            dirty.append(path)
+    return dirty
+
+
+def index_entry(project_root: Path, rel_path: str) -> tuple[str, str] | None:
+    """The staged entry for `rel_path`: (mode, blob sha). None when the
+    path is not staged. A merge conflict (more than one stage) returns
+    ("CONFLICT", ""), so callers refuse it."""
+    result = _run(["ls-files", "--stage", "--", rel_path], cwd=project_root)
+    lines = [line for line in result.stdout.splitlines() if line.strip()]
+    if not lines:
+        return None
+    if len(lines) > 1:
+        return ("CONFLICT", "")
+    meta = lines[0].split("\t", 1)[0].split()
+    # <mode> <sha> <stage>\t<path>
+    return (meta[0], meta[1])
+
+
+def blob_content_bytes(project_root: Path, blob_sha: str) -> bytes | None:
+    """The raw content of a git object, or None when it does not exist."""
+    result = subprocess.run(
+        ["git", "cat-file", "-e", blob_sha + "^{blob}"],
+        cwd=str(project_root),
+        env=_git_env(),
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+    result = subprocess.run(
+        ["git", "cat-file", "blob", blob_sha],
+        cwd=str(project_root),
+        env=_git_env(),
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout
+
+
+def head_blob_content_bytes(project_root: Path, rel_path: str) -> bytes | None:
+    """The blob content of `rel_path` at HEAD, or None when the path is
+    not in HEAD."""
+    result = subprocess.run(
+        ["git", "cat-file", "-e", f"HEAD:{rel_path}"],
+        cwd=str(project_root),
+        env=_git_env(),
+        capture_output=True,
+        text=True,
+    )
+    if result.returncode != 0:
+        return None
+    result = subprocess.run(
+        ["git", "cat-file", "blob", f"HEAD:{rel_path}"],
+        cwd=str(project_root),
+        env=_git_env(),
+        capture_output=True,
+    )
+    if result.returncode != 0:
+        return None
+    return result.stdout

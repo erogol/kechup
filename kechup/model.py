@@ -230,10 +230,14 @@ def load_tasks(project_root: Path) -> TasksFile:
     return TasksFile.from_dict(data)
 
 
+def serialize_tasks(tasks_file: TasksFile) -> str:
+    """The exact bytes `save_tasks` writes (CRASH_RECOVERY_SPEC v2)."""
+    return json.dumps(tasks_file.to_dict(), indent=2, sort_keys=True) + "\n"
+
+
 def save_tasks(project_root: Path, tasks_file: TasksFile) -> None:
     path = tasks_json_path(project_root)
-    text = json.dumps(tasks_file.to_dict(), indent=2, sort_keys=True) + "\n"
-    atomic_write_text(path, text)
+    atomic_write_text(path, serialize_tasks(tasks_file))
 
 
 CONFIG_REQUIRED_STR_FIELDS = ("owner_id", "created_at", "created_by")
@@ -267,10 +271,14 @@ def load_config(project_root: Path) -> dict[str, Any]:
     return data
 
 
+def serialize_config(config: dict[str, Any]) -> str:
+    """The exact bytes `save_config` writes (CRASH_RECOVERY_SPEC v2)."""
+    return json.dumps(config, indent=2, sort_keys=True) + "\n"
+
+
 def save_config(project_root: Path, config: dict[str, Any]) -> None:
     path = config_json_path(project_root)
-    text = json.dumps(config, indent=2, sort_keys=True) + "\n"
-    atomic_write_text(path, text)
+    atomic_write_text(path, serialize_config(config))
 
 
 def validate_title(title: str) -> None:
