@@ -325,7 +325,6 @@ def test_live_writer_lock_timeout_then_recovery_after_kill(new_project: Path) ->
 
 
 # --- Test 11: manual repair still works and clears the journal ---
-
 def test_manual_repair_clears_journal(new_project: Path) -> None:
     t1 = _add_task(new_project, "one")
     t2 = _add_task(new_project, "two")
@@ -339,3 +338,92 @@ def test_manual_repair_clears_journal(new_project: Path) -> None:
 
     result = run_kechup(["claim", t2], cwd=new_project, agent="agent-b")
     assert result.exit_code == 0, result.stderr
+
+
+# --- Advisor review: adversarial worktree and index states ---
+
+def test_symlink_residue_stays_refused(new_project: Path) -> None:
+    t1 = _add_task(new_project, "one")
+    t2 = _add_task(new_project, "two")
+
+    _crash_and_kill(new_project, t1, "before_commit")
+    tasks_json = new_project / ".kechup" / "tasks.json"
+    blob = tasks_json.read_bytes()
+    # A symlink whose target holds the intended bytes: the bytes check
+    # alone would pass, the file-type check must refuse it.
+    target = new_project / ".kechup" / "tasks.json.target"
+    target.write_bytes(blob)
+    tasks_json.unlink()
+    tasks_json.symlink_to(target)
+
+    result = run_kechup(["claim", t2], cwd=new_project, agent="agent-b")
+    assert result.exit_code == 3
+    assert result.json["error"]["code"] == "crash_residue"
+    assert tasks_json.is_symlink(), "refusal must not touch the residue"
+
+
+def test_exec_bit_residue_stays_refused(new_project: Path) -> None:
+    t1 = _add_task(new_project, "one")
+    t2 = _add_task(new_project, "two")
+
+    _crash_and_kill(new_project, t1, "before_commit")
+    tasks_json = new_project / ".kechup" / "tasks.json"
+    tasks_json.chmod(0o755)
+
+    result = run_kechup(["claim", t2], cwd=new_project, agent="agent-b")
+    assert result.exit_code == 3
+    assert result.json["error"]["code"] == "crash_residue"
+
+
+def test_staged_deletion_residue_stays_refused(new_project: Path) -> None:
+    t1 = _add_task(new_project, "one")
+    t2 = _add_task(new_project, "two")
+
+    _crash_and_kill(new_project, t1, "before_commit")
+    # A foreign `git rm --cached` removes the index entry while the
+    # worktree file keeps the intended bytes.
+    git(new_project, "rm", "--cached", "--", ".kechup/tasks.json")
+
+    result = run_kechup(["claim", t2], cwd=new_project, agent="agent-b")
+    assert result.exit_code == 3
+    assert result.json["error"]["code"] == "crash_residue"
+
+
+def test_journal_version_true_and_one_float_refuse(new_project: Path) -> None:
+    t1 = _add_task(new_project, "one")
+    t2 = _add_task(new_project, "two")
+
+    _crash_and_kill(new_project, t1, "before_commit")
+    path = _journal_path(new_project)
+    for bad in (True, 1.0):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        data["version"] = bad
+        path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        result = run_kechup(["claim", t2], cwd=new_project, agent="agent-b")
+        assert result.exit_code == 3
+        assert result.json["error"]["code"] == "crash_residue"
+
+
+def test_journal_duplicate_key_refuses(new_project: Path) -> None:
+    t1 = _add_task(new_project, "one")
+    t2 = _add_task(new_project, "two")
+
+    _crash_and_kill(new_project, t1, "before_commit")
+    path = _journal_path(new_project)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    keys = sorted(data)
+    dup_key = keys[0]
+    # Re-serialize with the key twice. json.dumps of a dict cannot
+    # produce duplicates, so build the text by hand from valid parts.
+    lines = []
+    for key, value in data.items():
+        if key == dup_key:
+            lines.append(json.dumps(key) + ": " + json.dumps(value))
+            lines.append(json.dumps(key) + ": " + json.dumps(value))
+        else:
+            lines.append(json.dumps(key) + ": " + json.dumps(value))
+    path.write_text("{\n" + ",\n".join(f"  {line}" for line in lines) + "\n}\n", encoding="utf-8")
+
+    result = run_kechup(["claim", t2], cwd=new_project, agent="agent-b")
+    assert result.exit_code == 3
+    assert result.json["error"]["code"] == "crash_residue"

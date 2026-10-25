@@ -33,7 +33,7 @@ from kechup.safety import (
     resolve_within,
 )
 from kechup.timeutil import now_iso
-from kechup.worksection import build_keche_md_text, rewrite_keche_md
+from kechup.worksection import build_keche_md_text, write_keche_md
 
 NON_TERMINAL_STATES = ("todo", "doing")
 
@@ -93,7 +93,7 @@ def _write_through(
         },
     )
     save_tasks(project_root, tasks_file)
-    rewrite_keche_md(project_root, tasks_file)
+    write_keche_md(project_root, keche_md_text)
     paths = [".kechup/tasks.json", "keche.md"]
     gitutil.git_add(project_root, paths)
     gitutil.commit(project_root, agent_id, message, paths=paths, only=True)
@@ -445,7 +445,7 @@ def show(
             journal.record(
                 project_root, agent_id, message, {"keche.md": keche_md_text}
             )
-            rewrite_keche_md(project_root, tasks_file)
+            write_keche_md(project_root, keche_md_text)
             paths = ["keche.md"]
             gitutil.git_add(project_root, paths)
             gitutil.commit(

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -89,13 +90,23 @@ def clear(project_root: Path) -> None:
 
 def _load(path: Path) -> dict[str, Any] | None:
     """Parse and strictly validate the journal. None on any deviation."""
+
+    def _reject_duplicates(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        keys = [key for key, _ in pairs]
+        if len(keys) != len(set(keys)):
+            raise ValueError("duplicate JSON key")
+        return dict(pairs)
+
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_reject_duplicates)
     except (OSError, ValueError):
         return None
     if not isinstance(data, dict) or set(data) != _JOURNAL_KEYS:
         return None
-    if data["version"] != JOURNAL_VERSION:
+    version = data["version"]
+    if isinstance(version, bool) or not isinstance(version, int):
+        return None
+    if version != JOURNAL_VERSION:
         return None
     base_head = data["base_head"]
     if not isinstance(base_head, str) or not COMMIT_ID_RE.match(base_head):
@@ -113,11 +124,29 @@ def _load(path: Path) -> dict[str, Any] | None:
     return data
 
 
-def _read_rel_bytes(project_root: Path, rel: str) -> bytes | None:
+def _worktree_file_safe(project_root: Path, rel: str, intended: bytes) -> bool:
+    """The on-disk file must be a regular, non-executable file whose
+    bytes equal the intended bytes. A symlink (also in a parent
+    directory), a directory, or a mode change refuses."""
+    if (project_root / rel).is_symlink():
+        return False
+    current = project_root
+    for part in Path(rel).parts:
+        current = current / part
+        if current.is_symlink():
+            return False
     try:
-        return (project_root / rel).read_bytes()
+        st = os.lstat(current)
     except OSError:
-        return None
+        return False
+    if not stat.S_ISREG(st.st_mode):
+        return False
+    if stat.S_IMODE(st.st_mode) & 0o111:
+        return False
+    try:
+        return current.read_bytes() == intended
+    except OSError:
+        return False
 
 
 def _index_safe(project_root: Path, rel: str, intended: bytes) -> bool:
@@ -126,7 +155,12 @@ def _index_safe(project_root: Path, rel: str, intended: bytes) -> bool:
     blob, or a foreign type/mode (symlink, gitlink, executable), is not."""
     entry = gitutil.index_entry(project_root, rel)
     if entry is None:
-        return True
+        # No index entry. A kechup crash before `git add` leaves the
+        # old HEAD entry in the index, so entry is None only after a
+        # foreign `git rm --cached`. Refuse, unless the path is also
+        # absent at HEAD: a new kechup file killed before its first
+        # `git add` has no entry and no HEAD blob.
+        return gitutil.head_blob_content_bytes(project_root, rel) is None
     mode, sha = entry
     if mode != "100644":
         return False
@@ -153,8 +187,9 @@ def recover(project_root: Path) -> bool:
         return False
     intended = {rel: content.encode("utf-8") for rel, content in data["paths"].items()}
     for rel, content in intended.items():
-        if _read_rel_bytes(project_root, rel) != content:
-            # Partial or foreign write: never completed, never replayed.
+        if not _worktree_file_safe(project_root, rel, content):
+            # Partial or foreign write, wrong file type, or mode
+            # change: never completed, never replayed.
             return False
     dirty = gitutil.dirty_paths(project_root, GUARDED_PATHS)
     for rel in dirty:

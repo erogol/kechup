@@ -8,7 +8,7 @@ from pathlib import Path
 
 from kechup import gitutil, journal
 from kechup.model import load_tasks
-from kechup.worksection import build_keche_md_text, rewrite_keche_md
+from kechup.worksection import build_keche_md_text, write_keche_md
 
 TASK_LINE_RE = re.compile(r"^Task: (T\d+)$", re.MULTILINE)
 REVERT_LOG_AUTHOR = "kechup-revert-log"
@@ -83,7 +83,7 @@ def run_revert_logging_prelude(project_root: Path) -> list[str]:
 
         if changed:
             journal.record(project_root, REVERT_LOG_AUTHOR, message, {"keche.md": after})
-            rewrite_keche_md(project_root, tasks_file)
+            write_keche_md(project_root, after)
             gitutil.git_add(project_root, ["keche.md"])
             gitutil.commit(
                 project_root, REVERT_LOG_AUTHOR, message, paths=["keche.md"], only=True
