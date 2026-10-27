@@ -40,6 +40,9 @@ kechup is a good choice when you want agent work to stay in plain git, with a cl
 
 - Python 3.12 or newer
 - git
+- Linux or macOS
+
+Windows is not supported. kechup uses `fcntl` file locks, and Windows does not have `fcntl`.
 
 ## Install
 
