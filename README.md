@@ -1,5 +1,9 @@
 # kechup
 
+[![PyPI](https://img.shields.io/pypi/v/kechup)](https://pypi.org/project/kechup/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)](https://pypi.org/project/kechup/)
+[![License: MIT](https://img.shields.io/github/license/erogol/kechup)](LICENSE)
+[![Platform: Linux | macOS](https://img.shields.io/badge/platform-linux%20%7C%20macOS-lightgrey)](#requirements)
 [![Made with KeCHe](https://img.shields.io/badge/made_with-KeCHe-8A2BE2)](https://github.com/coqui-ai/keche)
 
 kechup is a task tracker for one project folder. It is made for AI agents, and people can use it too.
