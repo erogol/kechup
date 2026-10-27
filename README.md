@@ -1,5 +1,7 @@
 # kechup
 
+[![Made with KeCHe](https://img.shields.io/badge/made_with-KeCHe-8A2BE2)](https://github.com/coqui-ai/keche)
+
 kechup is a task tracker for one project folder. It is made for AI agents, and people can use it too.
 
 Each project keeps its tasks in a small JSON file and in git. Any agent can see the open tasks, claim one, record notes, commit its work, and close the task when its tests and review pass.
