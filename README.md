@@ -48,6 +48,13 @@ pip install kechup
 kechup --help
 ```
 
+Or install it as an isolated command with [pipx](https://pipx.pypa.io/):
+
+```sh
+pipx install kechup
+kechup --help
+```
+
 For development, install from a clone:
 
 ```sh
