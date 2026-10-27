@@ -6,15 +6,28 @@
 [![Platform: Linux | macOS](https://img.shields.io/badge/platform-linux%20%7C%20macOS-lightgrey)](#requirements)
 [![Made with KeCHe](https://img.shields.io/badge/made_with-KeCHe-8A2BE2)](https://github.com/coqui-ai/keche)
 
-kechup is a task tracker for one project folder. It is made for AI agents, and people can use it too.
+kechup is a command-line task tracker for one project folder, made for AI agents and the people who run them.
 
-Each project keeps its tasks in a small JSON file and in git. Any agent can see the open tasks, claim one, record notes, commit its work, and close the task when its tests and review pass.
+The problem: a new agent session does not know what the last session did. kechup keeps the tasks, claims, notes and history in the project folder and in git, so the next session can read them.
+
+```sh
+# In a project folder made with `kechup new`:
+kechup add task "Write the FAQ" --by alice
+kechup next --claim --by agent-1
+echo "The FAQ is done." > tasks/T1-write-the-faq/REPORT.md
+kechup commit tasks/T1-write-the-faq/REPORT.md -m "FAQ report" --task T1 --by agent-1
+kechup done T1 --evidence tasks/T1-write-the-faq/REPORT.md --by agent-1
+```
+
+![kechup demo: add two tasks, claim, note, commit and close T1; a git revert then marks T1 as reverted, so T2, which waits on T1, shows as blocked](docs/demo.gif)
+
+`keche.md` is the project notes file. After `kechup new`, kechup changes only its Work section, and every kechup write keeps that section current.
 
 kechup uses the Python standard library and the `git` command. It has no other dependencies.
 
 ## Why kechup
 
-Agents forget. A new session does not know what the last session did. kechup puts the project state in the project folder, where every agent can read it:
+Agents forget. kechup puts the project state in the project folder, where every agent can read it:
 
 - `keche.md` has a **Work** section that shows what is doing, blocked, todo, and done.
 - `.kechup/tasks.json` holds the tasks.
