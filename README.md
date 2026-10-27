@@ -38,7 +38,7 @@ kechup is a good choice when you want agent work to stay in plain git, with a cl
 ## Install
 
 ```sh
-pip install "git+https://github.com/erogol/kechup"
+pip install kechup
 kechup --help
 ```
 
